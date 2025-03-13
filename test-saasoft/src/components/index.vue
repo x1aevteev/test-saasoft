@@ -1,12 +1,9 @@
 <script setup lang="ts">
 import UserBlock from './blocks/UserBlock.vue'
-defineProps<{
-  msg: string
-}>()
 </script>
 
 <template>
-  <div>
+  <div class="flex flex-col gap-8">
     <UserBlock/>
   </div>
 </template>
