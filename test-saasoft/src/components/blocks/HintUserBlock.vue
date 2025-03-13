@@ -6,6 +6,6 @@ import { VCard } from 'vuetify/components'
     prepend-icon="mdi-check-circle-outline"
     class="flex"
     color="red"
-    title="Для указания нескольких меток для одной пары логин\пароль используйте разделитель ;"
+    title="Для указания нескольких меток для одной пары логин\пароль используйте разделитель « ; »"
     />
 </template>

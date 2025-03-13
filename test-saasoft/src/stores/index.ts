@@ -7,7 +7,6 @@ export const useMainStore = defineStore('main', () => {
   const users = ref<user[]>([])
 
   const addEmptyUser = () => {
-    console.log('привет')
     const newUser: user = {
       labels: null,
       select: null,
@@ -17,7 +16,7 @@ export const useMainStore = defineStore('main', () => {
     users?.value.push(newUser)
   }
 
-  const updateUser = (index: number, updatedUser: user) => {
+  const updateUser = (index: number, updatedUser: any) => {
     users.value[index] = updatedUser
   }
 
