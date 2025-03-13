@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { defineStore } from 'pinia'
 import type {user} from '@/types/user'
 
@@ -14,11 +14,34 @@ export const useMainStore = defineStore('main', () => {
       password: null,
     }
     users?.value.push(newUser)
+    saveUsersToLocalStorage()
   }
 
   const updateUser = (index: number, updatedUser: any) => {
     users.value[index] = updatedUser
+    saveUsersToLocalStorage()
+    console.log('привет', users)
   }
+
+  const saveUsersToLocalStorage = () => {
+    localStorage.setItem('users', JSON.stringify(users.value))
+  }
+
+  const loadUsersFromLocalStorage = () => {
+    const savedUsers = localStorage.getItem('users')
+    if (savedUsers) {
+      users.value = JSON.parse(savedUsers)
+    }
+  }
+
+  onMounted(() => {
+    loadUsersFromLocalStorage()
+    console.log(users.value)
+  })
+
+  const removeUser = (index: number) => {
+    users.value.splice(index, 1)
+  };
 
   const setUser = (data: user) => {
     users?.value.push(data)
@@ -27,6 +50,7 @@ export const useMainStore = defineStore('main', () => {
   return { 
     users,
     addEmptyUser,
-    updateUser,   
+    updateUser,  
+    removeUser 
    }
 })

@@ -9,7 +9,7 @@ const store = useMainStore()
 </script>
 <template>
     <div class="flex gap-4 items-center">
-        <h1 class="text-xl">Учетные записи</h1>
+        <h1 class="text-xl !font-semibold">Учетные записи</h1>
         <VBtn
         text="+"
         @click="store.addEmptyUser()"
