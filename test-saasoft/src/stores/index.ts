@@ -18,6 +18,13 @@ export const useMainStore = defineStore('main', () => {
   }
 
   const updateUser = (index: number, updatedUser: any) => {
+
+    if (updatedUser.labels && typeof updatedUser.labels === 'string') {
+      updatedUser.labels = updatedUser.labels
+        .split(';') 
+        .map((label: string) => ({ text: label.trim() }))  
+    }
+
     users.value[index] = updatedUser
     saveUsersToLocalStorage()
     console.log('привет', users)
@@ -41,7 +48,8 @@ export const useMainStore = defineStore('main', () => {
 
   const removeUser = (index: number) => {
     users.value.splice(index, 1)
-  };
+    saveUsersToLocalStorage()
+  }
 
   const setUser = (data: user) => {
     users?.value.push(data)

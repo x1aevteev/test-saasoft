@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { VCard, VTextField, VSelect, VBtn } from 'vuetify/components'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import {useMainStore} from '@/stores/index'
 
 import type {user} from '@/types/user'
@@ -85,6 +85,27 @@ const STRING_WIDGETS = [
   }
 ]
 
+const loginRules = {
+    counter: (value: Array<string> | null) => {
+        if (value === null) {
+            return 'Value cannot be null'
+        }
+        return value.length <= 50 || 'Max 50 characters'
+    }
+}
+
+const user = computed(() => store.users[userIndex.value ?? 0] || { labels: [] })
+
+const getUserLabel = (index: number) => {
+    console.log(store.users[index])
+  const storeUser = store.users[index]
+  if (storeUser && storeUser.labels) {
+    console.log('привет')
+    console.log(storeUser.labels.map(label => label.text).join('; '))
+    return storeUser.labels.map(label => label.text).join('; ') || ''
+  }
+  return ''
+}
 
 </script>
 <template>
@@ -103,8 +124,8 @@ const STRING_WIDGETS = [
                     <p class="text-gray-500">{{ label.name }}</p>
                 </template>
             </div>
-            <template v-for="(user, i) in store.users" :key="i">
-                <form @submit.prevent="submitForm(i)" class="grid grid-cols-4 gap-4 w-full"> 
+            <template v-for="(user, index) in store.users" :key="index">
+                <form @submit.prevent="submitForm(index)" class="grid grid-cols-4 gap-4 w-full"> 
                     <template v-for="(field, i) in STRING_WIDGETS" :key="i">
                         <template v-if="field.type === 'text' && field.name !== 'login'">
                             <VTextField
@@ -114,13 +135,14 @@ const STRING_WIDGETS = [
                                 variant="outlined"
                                 @update:model-value="updateFormData(field.name, $event)"
                                 class="col-span-1"
-                                v-model="user[field.name as keyof user]"
+                                :v-model="getUserLabel(index)"
                             />
                         </template>
                         <template v-if="field.type === 'select'">
                             <VSelect
                                 :items=field.items
                                 :label="field.label"
+                                :rules="[loginRules.counter]"
                                 variant="outlined"
                                 @update:model-value="updateFormData(field.name, $event)"
                                 class="col-span-1"
