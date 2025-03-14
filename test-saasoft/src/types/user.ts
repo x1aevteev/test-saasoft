@@ -5,4 +5,5 @@ export type user = {
     select: selectType | null
     login: string | null
     password: string | null
+    [key: string]: any 
 }

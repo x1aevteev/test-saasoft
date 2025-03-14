@@ -19,15 +19,21 @@ export const useMainStore = defineStore('main', () => {
 
   const updateUser = (index: number, updatedUser: any) => {
 
-    if (updatedUser.labels && typeof updatedUser.labels === 'string') {
-      updatedUser.labels = updatedUser.labels
+    console.log('обновленный юзер' ,updatedUser[index])
+
+    if (updatedUser[index].labels && typeof updatedUser[index].labels === 'string') {
+      updatedUser[index].labels = updatedUser[index].labels
         .split(';') 
         .map((label: string) => ({ text: label.trim() }))  
     }
 
-    users.value[index] = updatedUser
+    if (updatedUser[index].select === 'LDAP' && !updatedUser.password) {
+      updatedUser.password = null
+  }
+
+    users.value[index] = updatedUser[index]
     saveUsersToLocalStorage()
-    console.log('привет', users)
+    console.log('привет', users.value)
   }
 
   const saveUsersToLocalStorage = () => {

@@ -35,7 +35,7 @@ const userDataObject = ref<Record<number, Record<string, any>>>({})
 
 const updateFormData = (key: string, value: any, index: number) => {
     if (!userDataObject.value[index]) {
-        userDataObject.value[index] = {} // ✅ Создаем объект для пользователя, если его нет
+        userDataObject.value[index] = {} 
     }
     userDataObject.value[index][key] = value
 }
@@ -46,12 +46,18 @@ const deleteUser = (index: number) => {
 
 const submitForm = (i: number) => {
     userIndex.value = i
+    if (userDataObject.value[i] && userDataObject.value[i].select === 'LDAP') {
+        if (!userDataObject.value[i].password) {
+            userDataObject.value[i].password = null
+        }
+    }
+
     console.log(userDataObject.value)
-  if (userIndex.value !== null) {
-    store.updateUser(userIndex.value, userDataObject.value) 
-  } else {
-    store.addEmptyUser()
-  }
+    if (userIndex.value !== null) {
+        store.updateUser(userIndex.value, userDataObject.value);
+    } else {
+        store.addEmptyUser();
+    }
 }
 
 const STRING_WIDGETS = [
@@ -88,10 +94,10 @@ const STRING_WIDGETS = [
 
 const loginRules = {
     counter: (value: Array<string> | null) => {
-        if (value === null) {
-            return 'Value cannot be null'
+        if (value === null || value === undefined) {
+            return 'Value cannot be null';
         }
-        return value.length <= 100 || 'Max 50 characters'
+        return value.length <= 100 || 'Max 100 characters';
     }
 }
 
@@ -116,6 +122,15 @@ const getUserLabel = (index: number) => {
   }
   return ''
 }
+
+const userField = (index: number, fieldName: string) => computed({
+    get: () => store.users[index]?.[fieldName], 
+    set: (value: any) => {
+        const updatedUser = { ...store.users[index], [fieldName]: value }
+        store.updateUser(index, updatedUser)
+    }
+})
+
 
 </script>
 <template>
@@ -153,10 +168,10 @@ const getUserLabel = (index: number) => {
                             <VSelect
                                 :items=field.items
                                 :label="field.label"
-                                variant="outlined"
+                                variant="outlined"  
                                 @update:model-value="updateFormData(field.name, $event, index)"
                                 class="col-span-1"
-                                v-model="user[field.name as keyof user]"
+                                v-model="store.users[index][field.name]"
                             />
                         </template>
                         <template v-if="field.type === 'text' && field.name === 'login'">
@@ -168,11 +183,11 @@ const getUserLabel = (index: number) => {
                                 :id="field.id"
                                 variant="outlined"
                                 @update:model-value="updateFormData(field.name, $event, index)"
-                                :class="(userDataObject[index] && userDataObject[index].select !== 'LDAP') ? 'col-span-1' : 'col-span-2'"
-                                v-model="user[field.name as keyof user]"
+                                :class="store.users[index]?.select !== 'LDAP' ? 'col-span-1' : 'col-span-2'"
+                                v-model="store.users[index][field.name]"
                             />
                         </template>
-                        <template v-if="field.type === 'password' && (userDataObject[index] && userDataObject[index].select !== 'LDAP')">
+                        <template v-if="field.type === 'password' && (store.users[index]?.select !== 'LDAP')">
                             <VTextField
                                 required
                                 type="password"
@@ -181,7 +196,7 @@ const getUserLabel = (index: number) => {
                                 :id="field.id"
                                 variant="outlined"
                                 @update:model-value="updateFormData(field.name, $event, index)"
-                                v-model="userDataObject[index][field.name]"
+                                v-model="store.users[index][field.name]"
                             />
                         </template>
                     </template>
