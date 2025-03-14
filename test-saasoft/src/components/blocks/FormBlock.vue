@@ -161,7 +161,7 @@ const userField = (index: number, fieldName: string) => computed({
                                 variant="outlined"
                                 @update:model-value="updateFormData(field.name, $event, index)"
                                 class="col-span-1"
-                                :v-model="getUserLabel(index)"
+                                :model-value="getUserLabel(index)"
                             />
                         </template>
                         <template v-if="field.type === 'select'">
