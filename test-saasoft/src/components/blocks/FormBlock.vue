@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { VCard, VTextField, VSelect, VBtn } from 'vuetify/components'
-import { ref, computed } from 'vue'
+import { VCard, VTextField, VSelect, VBtn, VForm } from 'vuetify/components'
+import { ref, computed, reactive, nextTick, watchEffect } from 'vue'
 import {useMainStore} from '@/stores/index'
 
 import type {user} from '@/types/user'
@@ -29,15 +29,39 @@ const stringFields = [
     },
 ]
 
+const formRefs = ref<Record<number, InstanceType<typeof VForm> | null>>({})
+watchEffect(() => {
+    Object.entries(formRefs.value).forEach(([index, form]) => {
+    if (form?.isValid) {
+        submitForm(Number(index))
+    }
+    })
+})
+
 
 const userIndex = ref<number | null>(null) 
 const userDataObject = ref<Record<number, Record<string, any>>>({})
+const errors = reactive<Record<number, Record<string, string>>>({})
 
-const updateFormData = (key: string, value: any, index: number) => {
+const validateField = (index: number, field: string, value: any) => {
+    if (!errors[index]) errors[index] = {}
+    if (!value) {
+        errors[index][field] = 'Поле обязательно для заполнения'
+    } else {
+        delete errors[index][field]
+    }
+}
+
+const updateFormData = async (key: string, value: any, index: number) => {
     if (!userDataObject.value[index]) {
         userDataObject.value[index] = {} 
     }
     userDataObject.value[index][key] = value
+
+    await nextTick()
+    if (formRefs.value[index]) {
+        formRefs.value[index]?.validate()
+    }
 }
 
 const deleteUser = (index: number) => {
@@ -54,9 +78,9 @@ const submitForm = (i: number) => {
 
     console.log(userDataObject.value)
     if (userIndex.value !== null) {
-        store.updateUser(userIndex.value, userDataObject.value);
+        store.updateUser(userIndex.value, userDataObject.value)
     } else {
-        store.addEmptyUser();
+        store.addEmptyUser()
     }
 }
 
@@ -95,9 +119,9 @@ const STRING_WIDGETS = [
 const loginRules = {
     counter: (value: Array<string> | null) => {
         if (value === null || value === undefined) {
-            return 'Value cannot be null';
+            return 'Value cannot be null'
         }
-        return value.length <= 100 || 'Max 100 characters';
+        return value.length <= 100 || 'Max 100 characters'
     }
 }
 
@@ -124,14 +148,26 @@ const getUserLabel = (index: number) => {
 }
 
 const userField = (index: number, fieldName: string) => computed({
-    get: () => store.users[index]?.[fieldName], 
-    set: (value: any) => {
-        const updatedUser = { ...store.users[index], [fieldName]: value }
-        store.updateUser(index, updatedUser)
+  get: () => {
+    if (fieldName === 'labels') {
+      return store.users[index]?.labels?.map(label => label.text).join('; ') || ''
     }
+    return store.users[index]?.[fieldName] || ''
+  },
+  set: (value: any) => {
+    if (fieldName === 'labels') {
+      store.users[index].labels = value.split('; ').map((text: any) => ({ text }))
+    } else {
+      store.users[index][fieldName] = value
+    }
+  }
 })
 
-
+const setFormRef = (el: InstanceType<typeof VForm> | null, index: number) => {
+    if (el) {
+        formRefs.value[index] = el
+    }
+}
 </script>
 <template>
     <template v-if="store.users.length <= 0">
@@ -150,7 +186,11 @@ const userField = (index: number, fieldName: string) => computed({
                 </template>
             </div>
             <template v-for="(user, index) in store.users" :key="index">
-                <form @submit.prevent="submitForm(index)" class="grid grid-cols-5 gap-4 w-full"> 
+                <VForm 
+                @submit.prevent="submitForm(index)" 
+                class="grid grid-cols-5 gap-4 w-full"
+                :ref="el => setFormRef(el as InstanceType<typeof VForm> | null, index)"
+                > 
                     <template v-for="(field, i) in STRING_WIDGETS" :key="i">
                         <template v-if="field.type === 'text' && field.name !== 'login'">
                             <VTextField
@@ -161,7 +201,10 @@ const userField = (index: number, fieldName: string) => computed({
                                 variant="outlined"
                                 @update:model-value="updateFormData(field.name, $event, index)"
                                 class="col-span-1"
-                                :model-value="getUserLabel(index)"
+                                v-model="userField(index, 'labels').value"
+                                @blur="validateField(index, field.name, store.users[index][field.name])"
+                                :error="!!errors[index]?.[field.name]"
+                                :error-messages="errors[index]?.[field.name]"
                             />
                         </template>
                         <template v-if="field.type === 'select'">
@@ -172,6 +215,9 @@ const userField = (index: number, fieldName: string) => computed({
                                 @update:model-value="updateFormData(field.name, $event, index)"
                                 class="col-span-1"
                                 v-model="store.users[index][field.name]"
+                                @change="validateField(index, field.name, store.users[index][field.name])"
+                                :error="!!errors[index]?.[field.name]"
+                                :error-messages="errors[index]?.[field.name]"
                             />
                         </template>
                         <template v-if="field.type === 'text' && field.name === 'login'">
@@ -185,6 +231,9 @@ const userField = (index: number, fieldName: string) => computed({
                                 @update:model-value="updateFormData(field.name, $event, index)"
                                 :class="store.users[index]?.select !== 'LDAP' ? 'col-span-1' : 'col-span-2'"
                                 v-model="store.users[index][field.name]"
+                                @blur="validateField(index, field.name, store.users[index][field.name])"
+                                :error="!!errors[index]?.[field.name]"
+                                :error-messages="errors[index]?.[field.name]"
                             />
                         </template>
                         <template v-if="field.type === 'password' && (store.users[index]?.select !== 'LDAP')">
@@ -197,6 +246,9 @@ const userField = (index: number, fieldName: string) => computed({
                                 variant="outlined"
                                 @update:model-value="updateFormData(field.name, $event, index)"
                                 v-model="store.users[index][field.name]"
+                                @blur="validateField(index, field.name, store.users[index][field.name])"
+                                :error="!!errors[index]?.[field.name]"
+                                :error-messages="errors[index]?.[field.name]"
                             />
                         </template>
                     </template>
@@ -208,7 +260,7 @@ const userField = (index: number, fieldName: string) => computed({
                         class="!max-w-[50px]"
                     />
                     <button type="submit" class="hidden"/>
-                </form>
+                </VForm>
             </template>
         </div>
     </template>

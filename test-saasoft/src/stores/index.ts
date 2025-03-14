@@ -19,8 +19,6 @@ export const useMainStore = defineStore('main', () => {
 
   const updateUser = (index: number, updatedUser: any) => {
 
-    console.log('обновленный юзер' ,updatedUser[index])
-
     if (updatedUser[index].labels && typeof updatedUser[index].labels === 'string') {
       updatedUser[index].labels = updatedUser[index].labels
         .split(';') 

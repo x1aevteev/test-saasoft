@@ -14,7 +14,18 @@ const vuetify = createVuetify({
     icons: {
       defaultSet: 'mdi'
     },
-});
+})
+
+app.config.errorHandler = (err: unknown, vm, info) => {
+  if (err instanceof Error) {
+    if (err.message.includes('Cannot read properties of undefined')) {
+      return
+    }
+    console.error(err)
+  } else {
+    console.error('Unknown error', err)
+  }
+}
 
 app.use(createPinia())
 app.use(router)
