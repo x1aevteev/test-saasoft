@@ -29,14 +29,15 @@ const stringFields = [
     },
 ]
 
-const selectItems = ['Локально', 'LDAP']
-
 
 const userIndex = ref<number | null>(null) 
-const userDataObject = ref<Record<string, any>>({})
+const userDataObject = ref<Record<number, Record<string, any>>>({})
 
-const updateFormData = (key: string, value: any) => {
-    userDataObject.value[key] = value
+const updateFormData = (key: string, value: any, index: number) => {
+    if (!userDataObject.value[index]) {
+        userDataObject.value[index] = {} // ✅ Создаем объект для пользователя, если его нет
+    }
+    userDataObject.value[index][key] = value
 }
 
 const deleteUser = (index: number) => {
@@ -90,6 +91,15 @@ const loginRules = {
         if (value === null) {
             return 'Value cannot be null'
         }
+        return value.length <= 100 || 'Max 50 characters'
+    }
+}
+
+const labelRules = {
+    counter: (value: Array<string> | null) => {
+        if (value === null) {
+            return 'Value cannot be null'
+        }
         return value.length <= 50 || 'Max 50 characters'
     }
 }
@@ -102,7 +112,7 @@ const getUserLabel = (index: number) => {
   if (storeUser && storeUser.labels) {
     console.log('привет')
     console.log(storeUser.labels.map(label => label.text).join('; '))
-    return storeUser.labels.map(label => label.text).join('; ') || ''
+    return storeUser.labels.map(label => label.text).join('; ')
   }
   return ''
 }
@@ -119,21 +129,22 @@ const getUserLabel = (index: number) => {
     </template>
     <template v-else>
         <div v-if="store.users.length > 0" class="flex flex-col gap-6">
-            <div class="grid grid-cols-4 gap-4 w-full">
+            <div class="grid grid-cols-5 gap-4 w-full">
                 <template v-for="(label, i) in stringFields" :key="i">
                     <p class="text-gray-500">{{ label.name }}</p>
                 </template>
             </div>
             <template v-for="(user, index) in store.users" :key="index">
-                <form @submit.prevent="submitForm(index)" class="grid grid-cols-4 gap-4 w-full"> 
+                <form @submit.prevent="submitForm(index)" class="grid grid-cols-5 gap-4 w-full"> 
                     <template v-for="(field, i) in STRING_WIDGETS" :key="i">
                         <template v-if="field.type === 'text' && field.name !== 'login'">
                             <VTextField
                                 :name="field.name"
                                 :label="field.label"
                                 :id="field.id"
+                                :rules="[]"
                                 variant="outlined"
-                                @update:model-value="updateFormData(field.name, $event)"
+                                @update:model-value="updateFormData(field.name, $event, index)"
                                 class="col-span-1"
                                 :v-model="getUserLabel(index)"
                             />
@@ -142,40 +153,44 @@ const getUserLabel = (index: number) => {
                             <VSelect
                                 :items=field.items
                                 :label="field.label"
-                                :rules="[loginRules.counter]"
                                 variant="outlined"
-                                @update:model-value="updateFormData(field.name, $event)"
+                                @update:model-value="updateFormData(field.name, $event, index)"
                                 class="col-span-1"
                                 v-model="user[field.name as keyof user]"
                             />
                         </template>
                         <template v-if="field.type === 'text' && field.name === 'login'">
                             <VTextField
+                                required
                                 :name="field.name"
                                 :label="field.label"
+                                :rules="[loginRules.counter]"
                                 :id="field.id"
                                 variant="outlined"
-                                @update:model-value="updateFormData(field.name, $event)"
-                                :class="userDataObject.select !== 'LDAP' ? 'col-span-1' : 'col-span-2'"
+                                @update:model-value="updateFormData(field.name, $event, index)"
+                                :class="(userDataObject[index] && userDataObject[index].select !== 'LDAP') ? 'col-span-1' : 'col-span-2'"
                                 v-model="user[field.name as keyof user]"
                             />
                         </template>
-                        <template v-if="field.type === 'password' && userDataObject.select !== 'LDAP'">
+                        <template v-if="field.type === 'password' && (userDataObject[index] && userDataObject[index].select !== 'LDAP')">
                             <VTextField
+                                required
+                                type="password"
                                 :name="field.name"
                                 :label="field.label"
                                 :id="field.id"
                                 variant="outlined"
-                                @update:model-value="updateFormData(field.name, $event)"
-                                v-model="user[field.name as keyof user]"
+                                @update:model-value="updateFormData(field.name, $event, index)"
+                                v-model="userDataObject[index][field.name]"
                             />
                         </template>
                     </template>
                     <VBtn
                         variant="plain"
                         prepend-icon="mdi-trash-can-outline"
-                        @click="deleteUser(i)"
+                        @click="deleteUser(index)"
                         small
+                        class="!max-w-[50px]"
                     />
                     <button type="submit" class="hidden"/>
                 </form>
