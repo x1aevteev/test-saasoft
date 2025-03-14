@@ -197,7 +197,7 @@ const setFormRef = (el: InstanceType<typeof VForm> | null, index: number) => {
                                 :name="field.name"
                                 :label="field.label"
                                 :id="field.id"
-                                :rules="[]"
+                                :rules="[labelRules.counter]"
                                 variant="outlined"
                                 @update:model-value="updateFormData(field.name, $event, index)"
                                 class="col-span-1"
